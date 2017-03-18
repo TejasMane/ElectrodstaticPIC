@@ -1,15 +1,12 @@
-
-# coding: utf-8
-
 # In[1]:
 
 import numpy as np
-import pylab as pl
-import scipy.fftpack as ff
 import h5py
+import pylab as pl
+import arrayfire as af
+from scipy.integrate import odeint
+import scipy.fftpack as ff
 from scipy import interpolate
-
-
 # In[2]:
 
 pl.rcParams['figure.figsize']  = 12, 7.5
@@ -40,7 +37,7 @@ pl.rcParams['ytick.labelsize']  = 'medium'
 pl.rcParams['ytick.direction']  = 'in'
 
 
-# ### For reference
+### For reference
 # \begin{align}
 # \hat{V}(k) &= \int_{0}^{1} V(x)e^{-2\pi\;i\;k\;x}dx \\ \\
 # V(x) &= \frac{1}{Npoints}\int_{0}^{1} \hat{V}(k)e^{+2\pi\;i\;k\;x}dk \\ \\
@@ -120,7 +117,7 @@ velocity_x = np.random.normal(mu, sigma, number_of_electrons)
 
 # In[8]:
 
-divisions_domain_x = 100
+divisions_domain_x = 200
 
 x_grid = np.linspace(0, length_domain_x, divisions_domain_x + 1, endpoint=True)
 
@@ -130,7 +127,7 @@ dx = x_grid[1] - x_grid[0]
 # In[9]:
 
 # Setting the amplitude for perturbation
-Amplitude_perturbed = 0.05
+Amplitude_perturbed = 0.01
 k_fourier = 2 * np.pi
 # Initializing the perturbation
 
@@ -154,8 +151,8 @@ for i in range(x_divisions_perturbed):
 # positions_x = np.sin(np.pi * positions_x)
 # Plot
 x_temp = np.linspace(0,1,100)
-a, b = np.histogram(positions_x, bins=(divisions_domain_x), range=(0, length_domain_x))
-a = (a / (number_of_electrons / divisions_domain_x))
+a, b = np.histogram(positions_x, bins=(100), range=(0, length_domain_x))
+a = (a / (number_of_electrons / 100))
 pl.plot(x_temp,a)
 pl.xlabel('$x$')
 pl.ylabel(r'$\delta\rho(x)$')
@@ -171,7 +168,7 @@ start_time = 0
 
 end_time   = 3
 
-dt  = 0.001
+dt  = 0.01
 
 time = np.arange(start_time, end_time + dt, dt)
 
@@ -183,10 +180,28 @@ rho_ions = (charge_ion * number_of_electrons) / (len(x_grid) * dx)
 
 # In[13]:
 
-Ex_all_times = np.zeros((len(time)/10) + 1)
-Ex_max = np.zeros((len(time)/10) + 1)
+Ex_all_times = np.zeros(len(time))
+Ex_max = np.zeros(len(time))
 
+# In[13.5]:
 
+# Finding interpolant fractions for the positions
+
+zone_x = np.floor(((positions_x - x_grid[0]) / dx))
+zone_x = zone_x.astype(np.int)
+frac_x = (positions_x - x_grid[zone_x]) / (dx)
+
+# Charge deposition using linear weighting scheme
+
+rho = cloud_charge_deposition(charge_electron, zone_x, frac_x, x_grid, dx)
+rho+= rho_ions
+rho = rho/ number_of_electrons
+
+# Calculating the potential/Electric field from the charge deposition.
+
+V, Ex = fft_poisson(rho,dx)
+
+print('Max electric field', max(Ex))
 # In[14]:
 
 for time_index in range(len(time)):
@@ -237,9 +252,8 @@ for time_index in range(len(time)):
 
     velocity_x += (Ex_particle * charge_electron / mass_electron ) * dt
 
-    if(time_index%10 == 0):
-        Ex_all_times[time_index/10] = np.sum(abs(Ex))
-        Ex_max[time_index/10] = max(abs(Ex))
+    Ex_all_times[time_index] = np.sum(abs(Ex))
+    Ex_max[time_index] = max(abs(Ex))
 
     # File writing
 
@@ -259,7 +273,7 @@ e =-1
 
 # k for the mode in fourier space
 k = 2*np.pi
-amp = 0.05
+amp = Amplitude_perturbed
 
 
 # The maxwell Boltzman function
