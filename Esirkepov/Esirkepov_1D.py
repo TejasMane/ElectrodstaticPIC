@@ -195,7 +195,7 @@ def indices_and_currents_TSC(charge_electron, positions_x, dt, x_grid, dx, ghost
 
     Jx[:, 4] = Jx[:, 3] + (-1 * charge_electron * (dx/dt) * W[:, 4].copy()) 
 
-
+    Jx = (1/dx) * Jx
 
 
     # Flattening the current matrix
@@ -203,11 +203,11 @@ def indices_and_currents_TSC(charge_electron, positions_x, dt, x_grid, dx, ghost
 
 
 
-    temp = af.where(af.abs(currents) > 0)
+    # temp = af.where(af.abs(currents) > 0)
 
-    if(temp.elements()>0):
-	    index_list  = index_list[temp].copy()
-	    currents    = currents[temp].copy()
+    # if(temp.elements()>0):
+	   #  index_list  = index_list[temp].copy()
+	   #  currents    = currents[temp].copy()
 
     af.eval(index_list)
     af.eval(currents)
