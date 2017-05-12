@@ -84,6 +84,11 @@ def TSC_charge_deposition(charge_electron, no_of_electrons, positions_x,\
     return rho
 
 
+
+
+
+
+
 def indices_and_currents_TSC(charge_electron, positions_x, dt, x_grid, dx, ghost_cells):
     
     positions_x_new     = positions_x + velocity_x * dt
