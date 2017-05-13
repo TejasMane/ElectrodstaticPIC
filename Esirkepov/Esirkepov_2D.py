@@ -1,7 +1,7 @@
 import numpy as np
 import arrayfire as af
 
-
+af.set_backend('cpu')
 
 def periodic_ghost(field, ghost_cells):
 
@@ -153,13 +153,12 @@ def TSC_charge_deposition_2D(charge_electron,\
 
     # Determining weights in x direction
 
-    temp = af.where(af.abs(distance_nodes_x - positions_x_3x) < dx/2 )
+    temp = af.where(af.abs(distance_nodes_x - positions_x_3x) < (0.5*dx) )
 
     if(temp.elements()>0):
         W_x[temp] = 0.75 - (af.abs(distance_nodes_x[temp] - positions_x_3x[temp])/dx)**2
-        print('W_x[temp] is ', W_x)
 
-    temp = af.where((af.abs(distance_nodes_x - positions_x_3x) >= dx/2 )\
+    temp = af.where((af.abs(distance_nodes_x - positions_x_3x) >= (0.5*dx) )\
                      * (af.abs(distance_nodes_x - positions_x_3x) < (1.5 * dx) )\
                    )
 
@@ -170,12 +169,12 @@ def TSC_charge_deposition_2D(charge_electron,\
 
     # Determining weights in y direction
 
-    temp = af.where(af.abs(distance_nodes_y - positions_y_3x) < dx/2 )
+    temp = af.where(af.abs(distance_nodes_y - positions_y_3x) < (0.5*dx) )
 
     if(temp.elements()>0):
         W_y[temp] = 0.75 - (af.abs(distance_nodes_y[temp] - positions_y_3x[temp])/dx)**2
 
-    temp = af.where((af.abs(distance_nodes_y - positions_y_3x) >= dx/2 )\
+    temp = af.where((af.abs(distance_nodes_y - positions_y_3x) >= (0.5*dx) )\
                      * (af.abs(distance_nodes_y - positions_y_3x) < (1.5 * dx) )\
                    )
 
@@ -187,23 +186,12 @@ def TSC_charge_deposition_2D(charge_electron,\
     W_x = af.data.moddims(W_x, positions_x.elements(), 3)
     W_y = af.data.moddims(W_y, positions_x.elements(), 3)
 
-    print('positions_x_3x is ', positions_x_3x)
-    print('distance_nodes_x is ', distance_nodes_x)
-
-    print('positions_y_3x is ', positions_y_3x)
-    print('distance_nodes_y is ', distance_nodes_y)
-
-
-
     W_x = af.tile(W_x, 1, 1, 3)
     
 
     W_y = af.tile(W_y, 1, 1, 3)
 
     W_y = af.reorder(W_y, 0, 2, 1)
-
-    print('W_x is ', W_x)
-    print('W_y is ', W_y)
 
     # Determining the final weight matrix
 
@@ -293,6 +281,9 @@ def   charge_deposition(charge_electron,\
                                                  ghost_cells, length_domain_x, length_domain_y\
                                                 )
 
+
+
+
     input_indices = (rho_x_indices*(y_grid.elements())+ rho_y_indices)
 
     rho, temp = np.histogram(input_indices,\
@@ -301,17 +292,20 @@ def   charge_deposition(charge_electron,\
                              weights=rho_values_at_these_indices\
                             )
     
+
     rho = af.data.moddims(af.to_array(rho), y_grid.elements(), x_grid.elements())
-    
+
     # Periodic BC's for charge deposition
     # Adding the charge deposited from other side of the grid 
+
     
-    rho[ghost_cells, :]  = rho[-1 - ghost_cells, :] + rho[ghost_cells, :]
-    rho[-1 - ghost_cells, :] = rho[ghost_cells, :].copy()
-    rho[:, ghost_cells]  = rho[:, -1 - ghost_cells] + rho[:, ghost_cells]
-    rho[:, -1 - ghost_cells] = rho[:, ghost_cells].copy()   
+    # rho[ghost_cells, :]  = rho[-1 - ghost_cells, :] + rho[ghost_cells, :]
+    # rho[-1 - ghost_cells, :] = rho[ghost_cells, :].copy()
+    # rho[:, ghost_cells]  = rho[:, -1 - ghost_cells] + rho[:, ghost_cells]
+    # rho[:, -1 - ghost_cells] = rho[:, ghost_cells].copy()   
     
-    rho = periodic_ghost(rho, ghost_cells)
+
+    # rho = periodic_ghost(rho, ghost_cells)
     
     af.eval(rho)
 
@@ -321,33 +315,33 @@ def   charge_deposition(charge_electron,\
 
 
 
-# def indices_and_currents_TSC_2D( charge_electron, positions_x, positions_y, velocity_x, velocity_y,\
-#                             x_grid, y_grid, ghost_cells, length_domain_x, length_domain_y, dt  ):
+def indices_and_currents_TSC_2D( charge_electron, positions_x, positions_y, velocity_x, velocity_y,\
+                            x_grid, y_grid, ghost_cells, length_domain_x, length_domain_y, dt  ):
     
-#     positions_x_new     = positions_x + velocity_x * dt
-#     positions_y_new     = positions_y + velocity_y * dt
+    positions_x_new     = positions_x + velocity_x * dt
+    positions_y_new     = positions_y + velocity_y * dt
 
 
-#     number_of_electrons = positions_x.elements()
+    number_of_electrons = positions_x.elements()
 
 
 
 
 
-#     # temp = af.where(af.abs(currents) > 0)
+    # temp = af.where(af.abs(currents) > 0)
 
-#     # if(temp.elements()>0):
-# 	   #  index_list  = index_list[temp].copy()
-# 	   #  currents    = currents[temp].copy()
+    # if(temp.elements()>0):
+	   #  index_list  = index_list[temp].copy()
+	   #  currents    = currents[temp].copy()
 
-#     af.eval(index_list_x_Jx, index_list_y_Jx)
-#     af.eval(index_list_x_Jy, index_list_y_Jy)
-#     af.eval(currents_Jx, currents_Jy)
+    af.eval(index_list_x_Jx, index_list_y_Jx)
+    af.eval(index_list_x_Jy, index_list_y_Jy)
+    af.eval(currents_Jx, currents_Jy)
 
 
-#     return index_list_x_Jx, index_list_y_Jx, currents_Jx,\
-#            index_list_x_Jy, index_list_y_Jy,\
-#            currents_Jy
+    return index_list_x_Jx, index_list_y_Jx, currents_Jx,\
+           index_list_x_Jy, index_list_y_Jy,\
+           currents_Jy
 
 
 
@@ -362,86 +356,86 @@ def   charge_deposition(charge_electron,\
 
 
 
-# def indices_and_currents_NGP_2D(charge_electron, positions_x, velocity_x, dt, x_grid, dx, ghost_cells):
+def indices_and_currents_NGP_2D(charge_electron, positions_x, velocity_x, dt, x_grid, dx, ghost_cells):
 
-#     positions_x_new     = positions_x + velocity_x * dt
-#     number_of_electrons = positions_x.elements()
+    positions_x_new     = positions_x + velocity_x * dt
+    number_of_electrons = positions_x.elements()
 
 
-#     base_indices = af.data.constant(0, positions_x.elements(), dtype=af.Dtype.u32)
-#     Jx           = af.data.constant(0, positions_x.elements(), 3, dtype=af.Dtype.f64)
+    base_indices = af.data.constant(0, positions_x.elements(), dtype=af.Dtype.u32)
+    Jx           = af.data.constant(0, positions_x.elements(), 3, dtype=af.Dtype.f64)
 
 
-#     x_zone = (((af.abs(positions_x - af.sum(x_grid[0])))/dx).as_type(af.Dtype.u32))
+    x_zone = (((af.abs(positions_x - af.sum(x_grid[0])))/dx).as_type(af.Dtype.u32))
 
-#     temp = af.where(af.abs(positions_x-x_grid[x_zone])<af.abs(positions_x-x_grid[x_zone + 1]))
+    temp = af.where(af.abs(positions_x-x_grid[x_zone])<af.abs(positions_x-x_grid[x_zone + 1]))
 
-#     if(temp.elements()>0):
-#         base_indices[temp] = x_zone[temp]
+    if(temp.elements()>0):
+        base_indices[temp] = x_zone[temp]
 
-#     temp = af.where(af.abs(positions_x - x_grid[x_zone])>=af.abs(positions_x-x_grid[x_zone + 1]))
+    temp = af.where(af.abs(positions_x - x_grid[x_zone])>=af.abs(positions_x-x_grid[x_zone + 1]))
 
-#     if(temp.elements()>0):
-#         base_indices[temp] = (x_zone[temp] + 1).as_type(af.Dtype.u32)
+    if(temp.elements()>0):
+        base_indices[temp] = (x_zone[temp] + 1).as_type(af.Dtype.u32)
 
-#     S0 = af.data.constant(0, 3 * positions_x.elements(), dtype=af.Dtype.f64)
-#     S1 = S0.copy()
+    S0 = af.data.constant(0, 3 * positions_x.elements(), dtype=af.Dtype.f64)
+    S1 = S0.copy()
 
-#     base_indices_plus  = (base_indices + 1 ).as_type(af.Dtype.u32)
-#     base_indices_minus = (base_indices - 1 ).as_type(af.Dtype.u32)
+    base_indices_plus  = (base_indices + 1 ).as_type(af.Dtype.u32)
+    base_indices_minus = (base_indices - 1 ).as_type(af.Dtype.u32)
 
-#     index_list = af.join(0, base_indices_minus, base_indices, base_indices_plus)
+    index_list = af.join(0, base_indices_minus, base_indices, base_indices_plus)
 
 
-#     # Computing S(base_indices - 1, base_indices, base_indices + 1)
+    # Computing S(base_indices - 1, base_indices, base_indices + 1)
 
-#     positions_x_3x = af.join(0, positions_x, positions_x, positions_x)
-#     positions_x_new_3x = af.join(0, positions_x_new, positions_x_new, positions_x_new)
+    positions_x_3x = af.join(0, positions_x, positions_x, positions_x)
+    positions_x_new_3x = af.join(0, positions_x_new, positions_x_new, positions_x_new)
 
-#     temp = af.where(af.abs(positions_x_3x - x_grid[index_list]) < dx/2)
+    temp = af.where(af.abs(positions_x_3x - x_grid[index_list]) < dx/2)
 
-#     if(temp.elements()>0):
-#         S0[temp] = 1
+    if(temp.elements()>0):
+        S0[temp] = 1
 
-#     temp = af.where(af.abs(positions_x_new_3x - x_grid[index_list]) < dx/2)
+    temp = af.where(af.abs(positions_x_new_3x - x_grid[index_list]) < dx/2)
 
-#     if(temp.elements()>0):
-#         S1[temp] = 1
+    if(temp.elements()>0):
+        S1[temp] = 1
 
 
-#     # Computing DS
-#     DS = S1 - S0
+    # Computing DS
+    DS = S1 - S0
 
-#     DS = af.data.moddims(DS, number_of_electrons, 3)
+    DS = af.data.moddims(DS, number_of_electrons, 3)
 
-#     # Computing weights
+    # Computing weights
 
-#     W = DS.copy()
+    W = DS.copy()
 
-#     Jx[:, 0] = -1 * charge_electron * velocity_x * W[:, 0].copy()
+    Jx[:, 0] = -1 * charge_electron * velocity_x * W[:, 0].copy()
 
-#     Jx[:, 1] = Jx[:, 0] + (-1 * charge_electron * velocity_x * W[:, 1].copy())
+    Jx[:, 1] = Jx[:, 0] + (-1 * charge_electron * velocity_x * W[:, 1].copy())
 
-#     Jx[:, 2] = Jx[:, 1] + (-1 * charge_electron * velocity_x * W[:, 2].copy())
+    Jx[:, 2] = Jx[:, 1] + (-1 * charge_electron * velocity_x * W[:, 2].copy())
 
 
-#     # Flattening the current matrix
-#     currents = af.flat(Jx)
+    # Flattening the current matrix
+    currents = af.flat(Jx)
 
-#     af.eval(index_list)
-#     af.eval(currents)
+    af.eval(index_list)
+    af.eval(currents)
 
-#     temp = af.where(af.abs(currents) > 0)
+    temp = af.where(af.abs(currents) > 0)
 
-#     index_list  = index_list[temp].copy()
-#     currents    = currents[temp].copy()
+    index_list  = index_list[temp].copy()
+    currents    = currents[temp].copy()
 
-#     af.eval(Jx_x_indices, Jx_y_indices, Jy_x_indices, Jy_y_indices)
+    af.eval(Jx_x_indices, Jx_y_indices, Jy_x_indices, Jy_y_indices)
 
-#     af.eval(Jx_values_at_these_indices, Jy_values_at_these_indices)
+    af.eval(Jx_values_at_these_indices, Jy_values_at_these_indices)
 
-#     return Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices,\
-#            Jy_x_indices, Jy_y_indices, Jy_values_at_these_indices
+    return Jx_x_indices, Jx_y_indices, Jx_values_at_these_indices,\
+           Jy_x_indices, Jy_y_indices, Jy_values_at_these_indices
 
 
 
@@ -461,60 +455,60 @@ def   charge_deposition(charge_electron,\
 
 
 
-# def Jx_Esirkepov_2D(   charge_electron,\
-#                        number_of_electrons,\
-#                        positions_x ,positions_y,\
-#                        velocities_x, velocities_y,\
-#                        x_grid, y_grid,\
-#                        ghost_cells,\
-#                        length_domain_x, length_domain_y,\
-#                        dx, dy,\
-#                        dt\
-#                    ):
+def Jx_Esirkepov_2D(   charge_electron,\
+                       number_of_electrons,\
+                       positions_x ,positions_y,\
+                       velocities_x, velocities_y,\
+                       x_grid, y_grid,\
+                       ghost_cells,\
+                       length_domain_x, length_domain_y,\
+                       dx, dy,\
+                       dt\
+                   ):
     
 
-#     elements = x_grid.elements() * y_grid.elements()
+    elements = x_grid.elements() * y_grid.elements()
 
-#     Jx_x_indices, Jx_y_indices,\
-#     Jx_values_at_these_indices,\
-#     Jy_x_indices, Jy_y_indices,\
-#     Jy_values_at_these_indices = indices_and_currents_TSC_2D(charge_electron,\
-#                                                      positions_x, positions_y,\
-#                                                      velocities_x, velocities_y,\
-#                                                      x_grid, y_grid,\
-#                                                      ghost_cells,\
-#                                                      length_domain_x, length_domain_y,\
-#                                                      dt\
-#                                                    )
+    Jx_x_indices, Jx_y_indices,\
+    Jx_values_at_these_indices,\
+    Jy_x_indices, Jy_y_indices,\
+    Jy_values_at_these_indices = indices_and_currents_TSC_2D(charge_electron,\
+                                                     positions_x, positions_y,\
+                                                     velocities_x, velocities_y,\
+                                                     x_grid, y_grid,\
+                                                     ghost_cells,\
+                                                     length_domain_x, length_domain_y,\
+                                                     dt\
+                                                   )
     
-#     # Current deposition using numpy's histogram
-#     input_indices = (Jx_x_indices*(y_grid.elements()) + Jx_y_indices)
+    # Current deposition using numpy's histogram
+    input_indices = (Jx_x_indices*(y_grid.elements()) + Jx_y_indices)
     
-#     # Computing Jx_Yee
+    # Computing Jx_Yee
     
-#     Jx_Yee, temp = np.histogram(  input_indices,\
-#                                   bins=elements,\
-#                                   range=(0, elements),\
-#                                   weights=Jx_values_at_these_indices\
-#                                  )
+    Jx_Yee, temp = np.histogram(  input_indices,\
+                                  bins=elements,\
+                                  range=(0, elements),\
+                                  weights=Jx_values_at_these_indices\
+                                 )
     
-#     Jx_Yee = af.data.moddims(af.to_array(Jx_Yee), y_grid.elements(), x_grid.elements())
+    Jx_Yee = af.data.moddims(af.to_array(Jx_Yee), y_grid.elements(), x_grid.elements())
     
-#     # Computing Jy_Yee
+    # Computing Jy_Yee
     
-#     input_indices = (Jy_x_indices*(y_grid.elements()) + Jy_y_indices)
+    input_indices = (Jy_x_indices*(y_grid.elements()) + Jy_y_indices)
     
-#     Jy_Yee, temp = np.histogram(input_indices,\
-#                                       bins=elements,\
-#                                       range=(0, elements),\
-#                                       weights=Jy_values_at_these_indices\
-#                                      )
+    Jy_Yee, temp = np.histogram(input_indices,\
+                                      bins=elements,\
+                                      range=(0, elements),\
+                                      weights=Jy_values_at_these_indices\
+                                     )
     
-#     Jy_Yee = af.data.moddims(af.to_array(Jy_Yee), y_grid.elements(), x_grid.elements())
+    Jy_Yee = af.data.moddims(af.to_array(Jy_Yee), y_grid.elements(), x_grid.elements())
 
-#     af.eval(Jx_Yee, Jy_Yee)
+    af.eval(Jx_Yee, Jy_Yee)
 
-#     return Jx_Yee, Jy_Yee
+    return Jx_Yee, Jy_Yee
 
 
 
@@ -535,14 +529,46 @@ def   charge_deposition(charge_electron,\
 no_of_electrons = 2
 charge_electron = 1
 
-positions_x     = af.Array([0.6, 0.0]).as_type(af.Dtype.f64)
-positions_y     = af.Array([0.6, 0.6]).as_type(af.Dtype.f64)
 
-velocity_x      = af.Array([-1.0, -1.0]).as_type(af.Dtype.f64)
-velocity_y      = af.Array([-1.0, -1.0]).as_type(af.Dtype.f64)
 
-x_grid          = af.Array([-0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4]).as_type(af.Dtype.f64)
-y_grid          = af.Array([-0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4]).as_type(af.Dtype.f64)
+positions_x     = af.Array([0.435, 0.51]).as_type(af.Dtype.f64)
+positions_y     = af.Array([0.571, 0.1]).as_type(af.Dtype.f64)
+
+
+velocity_x      = af.Array([-1.0]).as_type(af.Dtype.f64)
+velocity_y      = af.Array([-1.0]).as_type(af.Dtype.f64)
+
+
+length_domain_x = 1.0
+length_domain_y = 1.0
+
+ghost_cells     = 2
+
+
+divisions_domain_x = 5
+divisions_domain_y = 5
+
+dx = length_domain_x / divisions_domain_x
+dy = length_domain_y / divisions_domain_y
+
+
+x_grid = np.linspace(    0 - ghost_cells * dx,\
+                         length_domain_x + ghost_cells * dx, \
+                         divisions_domain_x + 1 + 2 * ghost_cells,\
+                         endpoint=True,\
+                         dtype = np.double\
+                    )
+
+y_grid = np.linspace(    0 - ghost_cells * dx,\
+                         length_domain_y + ghost_cells * dx, \
+                         divisions_domain_y + 1 + 2 * ghost_cells,\
+                         endpoint=True,\
+                         dtype = np.double\
+                    )
+
+x_grid = af.to_array(x_grid)
+y_grid = af.to_array(y_grid)
+
 
 
 dt              = 0.2
@@ -554,10 +580,6 @@ dy              = af.sum(y_grid[1] - y_grid[0])
 x_right         = x_grid + dx/2
 y_top           = y_grid + dy/2
 
-ghost_cells     = 1
-
-length_domain_x = 1.0
-length_domain_y = 1.0
 
 
 # Jx_staggered  = Jx_Esirkepov_2D(  charge_electron, no_of_electrons, positions_x,\
@@ -585,4 +607,7 @@ rho      = charge_deposition(   charge_electron,\
                             )
 
 
-print('rho is ', rho * dx * dy)
+# print('rho is ', (rho * dx * dy)[2:-2, 2:-2])
+# print('rho is ', af.sum((rho * dx * dy)[2:-2, 2:-2]))
+# print('rho is ', (rho * dx * dy))
+print('rho is ', af.sum((rho * dx * dy)))
