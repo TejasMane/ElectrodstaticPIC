@@ -447,7 +447,7 @@ def indices_and_currents_TSC_2D( charge_electron, positions_x, positions_y, velo
     W_x = af.data.moddims(W_x, positions_x.elements(), 5)
     W_y = af.data.moddims(W_y, positions_y.elements(), 5)
 
-    print('S0 W_y is ', W_y)
+    # print('S0 W_y is ', W_y)
 
     S0_x = af.tile(W_x, 1, 1, 5)
     
@@ -516,7 +516,7 @@ def indices_and_currents_TSC_2D( charge_electron, positions_x, positions_y, velo
     W_x = af.data.moddims(W_x, positions_x.elements(), 5)
     W_y = af.data.moddims(W_y, positions_x.elements(), 5)
 
-    print('S1 W_y is ', W_y)
+    # print('S1 W_y is ', W_y)
 
     S1_x = af.tile(W_x, 1, 1, 5)
     
@@ -525,11 +525,11 @@ def indices_and_currents_TSC_2D( charge_electron, positions_x, positions_y, velo
 
     S1_y = af.reorder(S1_y, 0, 2, 1)
 
-    print('S1_x is ', S1_x)
-    print('S0_x is ', S0_x)
+    # print('S1_x is ', S1_x)
+    # print('S0_x is ', S0_x)
 
-    print('S1_y is ', S1_y)
-    print('S0_y is ', S0_y)
+    # print('S1_y is ', S1_y)
+    # print('S0_y is ', S0_y)
 
 
     ###############################################################################################
@@ -541,7 +541,6 @@ def indices_and_currents_TSC_2D( charge_electron, positions_x, positions_y, velo
 
 
     W_y = (S1_y - S0_y) * (S0_x + (0.5 *(S1_x - S0_x)) )
-
 
 
     ###############################################################################################
@@ -563,10 +562,10 @@ def indices_and_currents_TSC_2D( charge_electron, positions_x, positions_y, velo
 
 
     Jy[:, :, 0] = -1 * charge_electron * (dy/dt) * W_y[:, :, 0].copy()
-    Jy[:, :, 1] = Jy[:, :, 1] + -1 * charge_electron * (dy/dt) * W_y[:, :, 1].copy()
-    Jy[:, :, 2] = Jy[:, :, 2] + -1 * charge_electron * (dy/dt) * W_y[:, :, 2].copy()
-    Jy[:, :, 3] = Jy[:, :, 3] + -1 * charge_electron * (dy/dt) * W_y[:, :, 3].copy()
-    Jy[:, :, 4] = Jy[:, :, 4] + -1 * charge_electron * (dy/dt) * W_y[:, :, 4].copy()
+    Jy[:, :, 1] = Jy[:, :, 0] + -1 * charge_electron * (dy/dt) * W_y[:, :, 1].copy()
+    Jy[:, :, 2] = Jy[:, :, 1] + -1 * charge_electron * (dy/dt) * W_y[:, :, 2].copy()
+    Jy[:, :, 3] = Jy[:, :, 2] + -1 * charge_electron * (dy/dt) * W_y[:, :, 3].copy()
+    Jy[:, :, 4] = Jy[:, :, 3] + -1 * charge_electron * (dy/dt) * W_y[:, :, 4].copy()
 
     Jy = (1/(dx * dy)) * Jy
 
@@ -591,7 +590,6 @@ def indices_and_currents_TSC_2D( charge_electron, positions_x, positions_y, velo
 
 
     currents_Jy = af.flat(Jy)
-
 
     af.eval(index_list_x_Jx, index_list_y_Jx)
     af.eval(index_list_x_Jy, index_list_y_Jy)
@@ -795,7 +793,7 @@ positions_y     = af.Array([0.5]).as_type(af.Dtype.f64)
 
 
 velocity_x      = af.Array([0.0]).as_type(af.Dtype.f64)
-velocity_y      = af.Array([1.0]).as_type(af.Dtype.f64)
+velocity_y      = af.Array([-1.0]).as_type(af.Dtype.f64)
 
 
 length_domain_x = 1.0
