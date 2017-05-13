@@ -548,8 +548,8 @@ def indices_and_currents_TSC_2D( charge_electron, positions_x, positions_y, velo
 
 
 
-    Jx = af.data.constant(0, positions_x.elements(), 5, 5)
-    Jy = af.data.constant(0, positions_x.elements(), 5, 5)
+    Jx = af.data.constant(0, positions_x.elements(), 5, 5, dtype = af.Dtype.f64)
+    Jy = af.data.constant(0, positions_x.elements(), 5, 5, dtype = af.Dtype.f64)
 
 
     Jx[:, 0, :] = -1 * charge_electron * (dx/dt) * W_x[:, 0, :].copy()
@@ -792,7 +792,7 @@ positions_x     = af.Array([0.5]).as_type(af.Dtype.f64)
 positions_y     = af.Array([0.5]).as_type(af.Dtype.f64)
 
 
-velocity_x      = af.Array([0.0]).as_type(af.Dtype.f64)
+velocity_x      = af.Array([1.0]).as_type(af.Dtype.f64)
 velocity_y      = af.Array([-1.0]).as_type(af.Dtype.f64)
 
 
@@ -852,28 +852,50 @@ Jx_Yee, Jy_Yee  =   Jx_Esirkepov_2D(   charge_electron,\
 
 
 
+
+
+
+
+rho_minus      = charge_deposition(   charge_electron,\
+                                positions_x,\
+                                positions_y,\
+                                x_grid,\
+                                y_grid,\
+                                TSC_charge_deposition_2D,\
+                                ghost_cells,\
+                                length_domain_x,\
+                                length_domain_y,\
+                                dx,\
+                                dy\
+                            )
+
+rho_plus     = charge_deposition(   charge_electron,\
+                                positions_x + velocity_x * dt,\
+                                positions_y + velocity_y * dt,\
+                                x_grid,\
+                                y_grid,\
+                                TSC_charge_deposition_2D,\
+                                ghost_cells,\
+                                length_domain_x,\
+                                length_domain_y,\
+                                dx,\
+                                dy\
+                            )
+
+# print('rho is ', (rho * dx * dy)[2:-2, 2:-2])
+# print('rho is ', af.sum((rho * dx * dy)[2:-2, 2:-2]))
+# print('rho is ', (rho * dx * dy))
+
+
+
+print('rho is ', ((rho_plus - rho_minus) * dx * dy))
+
 print('Jx_staggered is ', Jx_Yee * dx * dy)
 print('Jy_staggered is ', Jy_Yee * dx * dy)
+
+print('af.sum(velocity_x) is ', af.sum(velocity_x))
+print('af.sum(velocity_y) is ', af.sum(velocity_y))
+print('total current Jx_Yee is', af.sum(Jx_Yee) * dx * dy)
 print('total current Jy_Yee is', af.sum(Jy_Yee) * dx * dy)
-
-
-
-
-# rho      = charge_deposition(   charge_electron,\
-#                                 positions_x,\
-#                                 positions_y,\
-#                                 x_grid,\
-#                                 y_grid,\
-#                                 TSC_charge_deposition_2D,\
-#                                 ghost_cells,\
-#                                 length_domain_x,\
-#                                 length_domain_y,\
-#                                 dx,\
-#                                 dy\
-#                             )
-
-
-# # print('rho is ', (rho * dx * dy)[2:-2, 2:-2])
-# # print('rho is ', af.sum((rho * dx * dy)[2:-2, 2:-2]))
-# # print('rho is ', (rho * dx * dy))
-# print('rho is ', af.sum((rho * dx * dy)))
+continuity = ((rho_plus - rho_minus) * dx * dy) + Jx_Yee * dx * dy - af.shift(Jx_Yee * dx * dy, 0, 1) + Jy_Yee * dx * dy - af.shift(Jy_Yee * dx * dy, 1, 0)
+print('Continuity equation', af.sum(continuity))
